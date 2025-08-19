@@ -1,19 +1,38 @@
-name: Build Aria
-on: workflow_dispatch
+name: Build aria2 Windows
+
+on:
+  workflow_dispatch:
+
 jobs:
-  build:
-    runs-on: ubuntu-22.04
-    steps: 
-    - uses: actions/checkout@v4
-    - name: create image
-      run: |
-        docker build -t a2w:x64 -f Dockerfile.mingw
-    - name: get aria
-      run: |
-        docker run -d --name cpa2w a2w:x64 /bin/bash
-        docker cp cpa2w:/aria2/src/aria2c.exe .
-    - name: Upload artifact
-      uses: actions/upload-artifact@master
-      with:
-        name: aria
-        path: ./aria2c.exe
+  build-win:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出源码（包括 fork 修改）
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2. 设置 Docker Buildx（确保可以构建多平台镜像）
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # 3. 构建 Docker 镜像（基于 Dockerfile.mingw）
+      - name: Build aria2 Docker image
+        run: |
+          docker build \
+            --build-arg HOST=x86_64-w64-mingw32 \
+            -t aria2-mingw64 \
+            -f Dockerfile.mingw .
+
+      # 4. 运行容器并导出 Windows 二进制
+      - name: Extract aria2c.exe
+        run: |
+          mkdir -p out
+          docker run --rm -v $PWD/out:/out aria2-mingw64 cp /aria2/src/aria2c.exe /out
+
+      # 5. 上传构建产物
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: aria2-windows
+          path: out/aria2c.exe
