@@ -1,0 +1,19 @@
+name: Build Aria
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps: 
+    - uses: actions/checkout@v4
+    - name: create image
+      run: |
+        docker build -t a2w:x64 .
+    - name: get aria
+      run: |
+        docker run -d --name cpa2w a2w:x64 /bin/bash
+        docker cp cpa2w:/aria2/src/aria2c.exe .
+    - name: Upload artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: aria
+        path: ./aria2c.exe
